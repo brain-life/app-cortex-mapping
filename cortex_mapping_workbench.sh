@@ -10,7 +10,6 @@ subj=$1;
 HEMI="lh rh";
 METRIC="fa md rd ad icvf od isovf";
 
-
 cd $SUBJECTS_DIR/$subj;
 mkdir metric;
 
