@@ -41,6 +41,7 @@ echo "File name conversion complete";
 
 cd $SUBJECTS_DIR/$subj;
 
+echo "surface mapping"
 for hemi in $HEMI
 	do
 		mris_convert surf/${hemi}.pial surf/${hemi}.pial.surf.gii;
@@ -56,3 +57,25 @@ for hemi in $HEMI
 				mri_segstats --annot $subj ${hemi} aparc --i ./surf/${hemi}.${metric}.func.gii --sum ./stats/${hemi}.${metric}.sum;
 			done
 	done
+	
+for metric in $METRIC
+	do
+		mkdir ./label/$metric
+	done
+
+for hemi in $HEMI
+	do
+		for metric in $METRIC
+			do
+				mri_annotation2label --subject $subj --hemi $hemi --surface midsurface.surf.gii --stat ./surf/${hemi}.${metric}.func.gii --outdir ./label/$metric/			
+			done
+	done
+
+for metric in $METRIC
+	do
+		for i in ./label/$metric/*
+			do
+				tail "${i}" -n +3 > "${i}".txt
+			done
+	done
+echo "Surface mapping complete"
