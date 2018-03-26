@@ -54,10 +54,7 @@ for hemi in $HEMI
 		mris_convert surf/${hemi}.pial surf/${hemi}.pial.surf.gii;
 		mris_convert surf/${hemi}.white surf/${hemi}.white.surf.gii;
 		wb_command -surface-cortex-layer surf/${hemi}.white.surf.gii surf/${hemi}.pial.surf.gii 0.5 surf/${hemi}.midsurface.surf.gii;
-	done
-
-for hemi in $HEMI
-	do
+		
 		for metric in $METRIC
 			do
 				wb_command -volume-to-surface-mapping ./metric/${metric}.nii.gz ./surf/${hemi}.midsurface.surf.gii ./surf/${hemi}.${metric}.func.gii -ribbon-constrained ./surf/${hemi}.white.surf.gii ./surf/${hemi}.pial.surf.gii;
