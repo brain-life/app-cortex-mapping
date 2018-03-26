@@ -1,6 +1,8 @@
 #!/bin/bash
 
 ## This script will create a midthickness surface, map tensor and NODDI values to this surface, and compute stats for each ROI from Freesurfer parcellation
+## Developed by Brad Caron and Brent McPherson, Franco Pestilli's lab, Indiana University
+## 2018
 
 # Set subject directory in Freesurfer
 export SUBJECTS_DIR=/N/dc2/projects/lifebid/Concussion/concussion_real/cortex_mapping_test
@@ -42,6 +44,11 @@ echo "File name conversion complete";
 cd $SUBJECTS_DIR/$subj;
 
 echo "surface mapping"
+for metric in $METRIC
+	do
+		mkdir ./label/$metric
+	done
+
 for hemi in $HEMI
 	do
 		mris_convert surf/${hemi}.pial surf/${hemi}.pial.surf.gii;
@@ -55,19 +62,7 @@ for hemi in $HEMI
 			do
 				wb_command -volume-to-surface-mapping ./metric/${metric}.nii.gz ./surf/${hemi}.midsurface.surf.gii ./surf/${hemi}.${metric}.func.gii -ribbon-constrained ./surf/${hemi}.white.surf.gii ./surf/${hemi}.pial.surf.gii;
 				mri_segstats --annot $subj ${hemi} aparc --i ./surf/${hemi}.${metric}.func.gii --sum ./stats/${hemi}.${metric}.sum;
-			done
-	done
-	
-for metric in $METRIC
-	do
-		mkdir ./label/$metric
-	done
-
-for hemi in $HEMI
-	do
-		for metric in $METRIC
-			do
-				mri_annotation2label --subject $subj --hemi $hemi --surface midsurface.surf.gii --stat ./surf/${hemi}.${metric}.func.gii --outdir ./label/$metric/			
+				mri_annotation2label --subject $subj --hemi $hemi --surface midsurface.surf.gii --stat ./surf/${hemi}.${metric}.func.gii --outdir ./label/$metric/;
 			done
 	done
 
