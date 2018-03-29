@@ -23,6 +23,7 @@ ROIs = {'bankssts','caudalanteriorcingulate','caudalmiddlefrontal',...
 metric = [];
 metric.name = {'fa','md','rd','ad','icvf','od','isovf'};
 hemi = {'lh','rh'};
+pgNum = [1 2];
 for ii = 1:length(hemi)
     data.hemi{ii}.name = hemi{ii};
 end
@@ -41,8 +42,10 @@ for ii = 1:length(ROIs)
             data.hemi{ll}.file{jj,ii} = dlmread([dataDir '/' metric.name{jj} '/' hemi{ll} '.' ROIs{ii} '.label.txt']);
             data.hemi{ll}.metric{jj,ii} = data.hemi{ll}.file{jj,ii}(:,5);
             data.hemi{ll}.percentile{jj,ii} = prctile(data.hemi{ll}.metric{jj,ii},[25 50 75],1);
-            data.hemi{ll}.whisker_upper{jj,ii} = data.hemi{ll}.percentile{jj,ii}(3) + 1.5*(data.hemi{ll}.percentile{jj,ii}(3) - data.hemi{ll}.percentile{jj,ii}(1));
-            data.hemi{ll}.whisker_lower{jj,ii} = data.hemi{ll}.percentile{jj,ii}(1) - 1.5*(data.hemi{ll}.percentile{jj,ii}(3) - data.hemi{ll}.percentile{jj,ii}(1));
+            data.hemi{ll}.IQR(jj,ii) = data.hemi{ll}.percentile{jj,ii}(3) - data.hemi{ll}.percentile{jj,ii}(1);
+            data.hemi{ll}.IQR_max(jj) = max(data.hemi{ll}.IQR(jj,:));
+            data.hemi{ll}.whisker_upper{jj,ii} = data.hemi{ll}.percentile{jj,ii}(3) + 1.5*(data.hemi{ll}.IQR(jj,ii));
+            data.hemi{ll}.whisker_lower{jj,ii} = data.hemi{ll}.percentile{jj,ii}(1) - 1.5*(data.hemi{ll}.IQR(jj,ii));
             if data.hemi{ll}.whisker_lower{jj,ii} <= 0
                 data.hemi{ll}.whisker_lower{jj,ii} = 0;
             end
@@ -66,26 +69,49 @@ for ii = 1:length(ROIs)
         end
     end
 end
+
+for ii = 1:length(ROIs)
+    for ll = 1:length(hemi)
+        data.hemi{ll}.metric_count(ii) = length(data.hemi{ll}.metric{1,ii});
+    end
+end
+
+for ll = 1:length(hemi)
+    data.hemi{ll}.metric_count_max = max(data.hemi{ll}.metric_count);
+end
+
+for jj = 1:length(metric.name)
+    data.IQR_max(jj) = max([data.hemi{1}.IQR_max(jj) data.hemi{2}.IQR_max(jj)]);
+end
+
+data.metric_count_max = max([data.hemi{1}.metric_count_max data.hemi{2}.metric_count_max]);
+
 %% Plot generation
 for jj = 1:length(metric.name)
-    max_lh_outlier = max([data.hemi{1}.max_outlier{jj,:}]);
-    max_rh_outlier = max([data.hemi{2}.max_outlier{jj,:}]);
-    max_lh_whisker = max([data.hemi{1}.max_whisker{jj,:}]);
-    max_rh_whisker = max([data.hemi{2}.max_whisker{jj,:}]);
-    max_outlier = max(max_lh_outlier,max_rh_outlier);
-    max_outlier = round(max_outlier,1);
-    max_whisker = max(max_lh_whisker,max_rh_whisker);
-    max_whisker = round(max_whisker,1);
-    if max_outlier > max_whisker
-        xlim = [0 (max_outlier + 0.1)];
+    max_lh_outlier(jj) = max([data.hemi{1}.max_outlier{jj,:}]);
+    max_rh_outlier(jj) = max([data.hemi{2}.max_outlier{jj,:}]);
+    max_lh_whisker(jj) = max([data.hemi{1}.max_whisker{jj,:}]);
+    max_rh_whisker(jj) = max([data.hemi{2}.max_whisker{jj,:}]);
+    max_outlier(jj) = max([max_lh_outlier(jj) max_rh_outlier(jj)]);
+    max_outlier(jj) = round(max_outlier(jj),1);
+    max_whisker(jj) = max([max_lh_whisker(jj) max_rh_whisker(jj)]);
+    max_whisker(jj) = round(max_whisker(jj),1);
+    if max_outlier(jj) > max_whisker(jj)
+        xlim(jj,:) = [0 (max_outlier(jj) + 0.1)];
     else
-        xlim = [0 (max_whisker + 0.1)];
+        xlim(jj,:) = [0 (max_whisker(jj) + 0.1)];
     end
     boxPlotsROI(data,ROIs,jj,xlim,y,box);
-    clear('max_lh_outlier','max_lh_whisker','max_rh_outlier','max_rh_whisker','max_outlier','max_whisker');
+end
+
+for jj = 1:length(metric.name)
+    for nn = 1:length(pgNum)
+        histogramROI_generator(data,pgNum(nn),ROIs,jj,xlim)
+    end
 end
 
 %% Save stats file
-save(fullfile(statsDir,sprintf('%s_stats.mat',subj)),'data','-v7.3');
+save(fullfile(statsDir,sprintf('%s_stats.mat',subj)),'data','xlim','y','box','max_lh_outlier','max_lh_whisker','max_rh_outlier','max_rh_whisker','max_outlier','max_whisker','-v7.3');
 
+clear();
 end
